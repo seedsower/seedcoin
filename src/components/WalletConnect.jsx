@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
 import { Wallet, Copy, ExternalLink, AlertCircle } from 'lucide-react'
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
 
-// Mock wallet connection for demonstration
 const WalletConnect = () => {
   const [isConnected, setIsConnected] = useState(false)
   const [walletAddress, setWalletAddress] = useState('')
@@ -14,27 +14,81 @@ const WalletConnect = () => {
     sdao: 0
   })
   const [isConnecting, setIsConnecting] = useState(false)
+  const [connection, setConnection] = useState(null)
+  const [provider, setProvider] = useState(null)
 
-  // Mock wallet connection
-  const connectWallet = async () => {
-    setIsConnecting(true)
-    
-    // Simulate wallet connection delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Mock successful connection
-    const mockAddress = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU'
-    setWalletAddress(mockAddress)
-    setIsConnected(true)
-    setBalance({
-      sol: 2.45,
-      seeds: 1250.00,
-      sdao: 500.00
-    })
-    setIsConnecting(false)
+  useEffect(() => {
+    // Initialize Solana devnet connection
+    const conn = new Connection('https://api.devnet.solana.com', 'confirmed')
+    setConnection(conn)
+
+    // Check if Phantom wallet is available
+    const getProvider = () => {
+      if ('phantom' in window) {
+        const provider = window.phantom?.solana
+        if (provider?.isPhantom) {
+          return provider
+        }
+      }
+      return null
+    }
+
+    const phantom = getProvider()
+    setProvider(phantom)
+
+    // Check if already connected
+    if (phantom?.isConnected) {
+      setIsConnected(true)
+      setWalletAddress(phantom.publicKey.toString())
+      fetchBalance(phantom.publicKey, conn)
+    }
+  }, [])
+
+  const fetchBalance = async (publicKey, conn) => {
+    try {
+      const balance = await conn.getBalance(publicKey)
+      setBalance(prev => ({
+        ...prev,
+        sol: balance / LAMPORTS_PER_SOL
+      }))
+    } catch (error) {
+      console.error('Error fetching balance:', error)
+    }
   }
 
-  const disconnectWallet = () => {
+  const connectWallet = async () => {
+    if (!provider) {
+      alert('Phantom wallet not found! Please install Phantom wallet.')
+      return
+    }
+
+    setIsConnecting(true)
+    
+    try {
+      const response = await provider.connect()
+      const publicKey = response.publicKey.toString()
+      
+      setWalletAddress(publicKey)
+      setIsConnected(true)
+      
+      // Fetch SOL balance
+      await fetchBalance(response.publicKey, connection)
+      
+      setIsConnecting(false)
+    } catch (error) {
+      console.error('Error connecting wallet:', error)
+      setIsConnecting(false)
+    }
+  }
+
+  const disconnectWallet = async () => {
+    if (provider) {
+      try {
+        await provider.disconnect()
+      } catch (error) {
+        console.error('Error disconnecting wallet:', error)
+      }
+    }
     setIsConnected(false)
     setWalletAddress('')
     setBalance({ sol: 0, seeds: 0, sdao: 0 })
@@ -49,6 +103,10 @@ const WalletConnect = () => {
     return `${address.slice(0, 4)}...${address.slice(-4)}`
   }
 
+  const openInExplorer = () => {
+    window.open(`https://explorer.solana.com/address/${walletAddress}?cluster=devnet`, '_blank')
+  }
+
   if (!isConnected) {
     return (
       <Card className="w-full max-w-md mx-auto">
@@ -56,46 +114,43 @@ const WalletConnect = () => {
           <Wallet className="h-12 w-12 mx-auto mb-4 text-green-600" />
           <CardTitle>Connect Your Wallet</CardTitle>
           <CardDescription>
-            Connect your Solana wallet to start using SeedCoin
+            Connect your Solana wallet to start using SeedCoin on Devnet
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3">
             <Button 
               onClick={connectWallet} 
-              disabled={isConnecting}
+              disabled={isConnecting || !provider}
               className="bg-purple-600 hover:bg-purple-700"
             >
-              {isConnecting ? 'Connecting...' : 'Phantom'}
-            </Button>
-            <Button 
-              onClick={connectWallet} 
-              disabled={isConnecting}
-              variant="outline"
-            >
-              {isConnecting ? 'Connecting...' : 'Solflare'}
-            </Button>
-            <Button 
-              onClick={connectWallet} 
-              disabled={isConnecting}
-              variant="outline"
-            >
-              {isConnecting ? 'Connecting...' : 'Ledger'}
-            </Button>
-            <Button 
-              onClick={connectWallet} 
-              disabled={isConnecting}
-              variant="outline"
-            >
-              {isConnecting ? 'Connecting...' : 'Backpack'}
+              {isConnecting ? 'Connecting...' : provider ? 'Connect Phantom' : 'Install Phantom'}
             </Button>
           </div>
           
-          <div className="flex items-start space-x-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-amber-800">
-              <p className="font-medium">Demo Mode</p>
-              <p>This is a demonstration. Click any wallet to simulate connection.</p>
+          {!provider && (
+            <div className="flex items-start space-x-2 p-3 bg-red-50 rounded-lg border border-red-200">
+              <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-red-800">
+                <p className="font-medium">Phantom Wallet Required</p>
+                <p>Please install the Phantom wallet browser extension to continue.</p>
+                <a 
+                  href="https://phantom.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-purple-600 hover:text-purple-700 underline"
+                >
+                  Download Phantom
+                </a>
+              </div>
+            </div>
+          )}
+          
+          <div className="flex items-start space-x-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <AlertCircle className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-blue-800">
+              <p className="font-medium">Solana Devnet</p>
+              <p>Connected to Solana devnet for testing. Switch your wallet to devnet.</p>
             </div>
           </div>
         </CardContent>
@@ -135,6 +190,7 @@ const WalletConnect = () => {
           <Button 
             variant="ghost" 
             size="sm" 
+            onClick={openInExplorer}
             className="h-6 w-6 p-0"
           >
             <ExternalLink className="h-3 w-3" />
@@ -171,7 +227,7 @@ const WalletConnect = () => {
         
         <div className="pt-2 border-t">
           <div className="text-xs text-gray-500 text-center">
-            Network: Solana Mainnet
+            Network: Solana Devnet
           </div>
         </div>
       </CardContent>

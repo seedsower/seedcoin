@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge.jsx'
 import { Sprout, Coins, Vote, TrendingUp, Shield, Users } from 'lucide-react'
 import Dashboard from './components/Dashboard.jsx'
+import ProtocolDemo from './components/ProtocolDemo.jsx'
+import SimpleTest from './components/SimpleTest.jsx'
 import './App.css'
 
 // Landing Page Component
@@ -28,9 +30,16 @@ function LandingPage() {
             <a href="#features" className="text-gray-600 hover:text-green-600 dark:text-gray-300">Features</a>
             <a href="#tokens" className="text-gray-600 hover:text-green-600 dark:text-gray-300">Tokens</a>
             <a href="#governance" className="text-gray-600 hover:text-green-600 dark:text-gray-300">Governance</a>
-            <Link to="/dashboard">
-              <Button className="bg-green-600 hover:bg-green-700">Launch App</Button>
-            </Link>
+            <div className="flex space-x-3">
+              <Link to="/dashboard">
+                <Button className="bg-green-600 hover:bg-green-700">Launch App</Button>
+              </Link>
+              <Link to="/protocol">
+                <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                  View Protocol
+                </Button>
+              </Link>
+            </div>
           </nav>
         </div>
       </header>
@@ -242,6 +251,8 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/protocol" element={<ProtocolDemo />} />
+        <Route path="/test" element={<SimpleTest />} />
       </Routes>
     </Router>
   )

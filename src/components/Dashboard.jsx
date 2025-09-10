@@ -1,13 +1,29 @@
 import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
 import { Button } from '@/components/ui/button.jsx'
+import { Badge } from '@/components/ui/badge.jsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
-import { TrendingUp, TrendingDown, Wallet, Coins, Vote, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react'
-import WalletConnect from './WalletConnect.jsx'
+import { Progress } from '@/components/ui/progress.jsx'
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Coins, 
+  Users, 
+  Activity,
+  ArrowUpRight,
+  ArrowDownRight,
+  Sprout,
+  Shield,
+  Wallet,
+  BarChart3,
+  Vote
+} from 'lucide-react'
+import Analytics from './Analytics.jsx'
+import SeedStableProtocol from './SeedStableProtocol.jsx'
 import TokenPurchase from './TokenPurchase.jsx'
 import Governance from './Governance.jsx'
-import Analytics from './Analytics.jsx'
+import WalletConnect from './WalletConnect.jsx'
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('overview')
@@ -135,8 +151,9 @@ const Dashboard = () => {
           {/* Main Content */}
           <div className="lg:col-span-3">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="protocol">Protocol</TabsTrigger>
                 <TabsTrigger value="swap">Swap</TabsTrigger>
                 <TabsTrigger value="stake">Stake</TabsTrigger>
                 <TabsTrigger value="governance">Governance</TabsTrigger>
@@ -312,6 +329,11 @@ const Dashboard = () => {
               {/* Governance Tab */}
               <TabsContent value="governance" className="space-y-6">
                 <Governance />
+              </TabsContent>
+
+              {/* SeedStable Protocol Tab */}
+              <TabsContent value="protocol" className="space-y-6">
+                <SeedStableProtocol />
               </TabsContent>
 
               {/* Analytics Tab */}

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button.jsx'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
-import { Input } from '@/components/ui/input.jsx'
-import { Badge } from '@/components/ui/badge.jsx'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.jsx'
-import { ArrowUpDown, Settings, TrendingUp, AlertTriangle, Zap } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { Button } from './ui/button'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card'
+import { Input } from './ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Badge } from './ui/badge'
+import { ArrowUpDown, TrendingUp, Settings, Zap, AlertTriangle } from 'lucide-react'
+import { Connection, SystemProgram, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { TOKEN_PROGRAM_ID } from '@solana/spl-token'
 
 const TokenPurchase = () => {
   const [fromToken, setFromToken] = useState('SOL')
@@ -14,28 +16,88 @@ const TokenPurchase = () => {
   const [slippage, setSlippage] = useState('0.5')
   const [isSwapping, setIsSwapping] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [wallet, setWallet] = useState(null)
+  const [connection, setConnection] = useState(null)
+  const [balances, setBalances] = useState({
+    SOL: 0,
+    SEEDS: 0,
+    SDAO: 0,
+    USDC: 0
+  })
 
-  // Mock token prices
-  const tokenPrices = {
+  // Orca SDK removed due to persistent compatibility issues
+
+  // Mock token prices (in production, fetch from Jupiter API)
+  const tokenPrices = useMemo(() => ({
     SOL: 145.32,
     SEEDS: 1.00,
     SDAO: 0.25,
     USDC: 1.00
-  }
+  }), [])
 
-  // Mock user balances
-  const balances = {
-    SOL: 2.45,
-    SEEDS: 1250.00,
-    SDAO: 500.00,
-    USDC: 100.00
+  useEffect(() => {
+    // Initialize connection
+    const conn = new Connection('https://api.devnet.solana.com', 'confirmed')
+    setConnection(conn)
+
+    // Get wallet provider
+    const getProvider = () => {
+      if ('phantom' in window) {
+        const provider = window.phantom?.solana
+        if (provider?.isPhantom) {
+          return provider
+        }
+      }
+      return null
+    }
+
+    const phantom = getProvider()
+    setWallet(phantom)
+
+    // Fetch balances if wallet is connected
+    if (phantom?.isConnected) {
+      fetchBalances(phantom.publicKey, conn)
+    }
+  }, [])
+
+  const fetchBalances = async (publicKey, conn) => {
+    try {
+      // Fetch SOL balance
+      const solBalance = await conn.getBalance(publicKey)
+      setBalances(prev => ({
+        ...prev,
+        SOL: solBalance / LAMPORTS_PER_SOL
+      }))
+    } catch (error) {
+      console.error('Error fetching balances:', error)
+    }
   }
 
   const tokens = [
-    { symbol: 'SOL', name: 'Solana', color: 'bg-blue-100 text-blue-800' },
-    { symbol: 'SEEDS', name: 'Seed Stable', color: 'bg-green-100 text-green-800' },
-    { symbol: 'SDAO', name: 'SeedDAO', color: 'bg-purple-100 text-purple-800' },
-    { symbol: 'USDC', name: 'USD Coin', color: 'bg-gray-100 text-gray-800' }
+    { 
+      symbol: 'SOL', 
+      name: 'Solana', 
+      color: 'bg-blue-100 text-blue-800',
+      mint: 'So11111111111111111111111111111111111111112'
+    },
+    { 
+      symbol: 'SEEDS', 
+      name: 'Seed Stable', 
+      color: 'bg-green-100 text-green-800',
+      mint: 'Eoyy5BhjVsRUTiyHoNbM675PAZHdyX7qGr1yndZezYQG'
+    },
+    { 
+      symbol: 'SDAO', 
+      name: 'SeedDAO', 
+      color: 'bg-purple-100 text-purple-800',
+      mint: null
+    },
+    { 
+      symbol: 'USDC', 
+      name: 'USD Coin', 
+      color: 'bg-gray-100 text-gray-800',
+      mint: null
+    }
   ]
 
   // Calculate exchange rate and amounts
@@ -51,7 +113,7 @@ const TokenPurchase = () => {
       const calculatedAmount = (parseFloat(toAmount) * toPrice / fromPrice).toFixed(6)
       setFromAmount(calculatedAmount)
     }
-  }, [fromAmount, toAmount, fromToken, toToken])
+  }, [fromAmount, toAmount, fromToken, toToken, tokenPrices])
 
   const handleSwapTokens = () => {
     const tempToken = fromToken
@@ -68,16 +130,134 @@ const TokenPurchase = () => {
   }
 
   const executeSwap = async () => {
+    if (!wallet || !wallet.isConnected) {
+      alert('Please connect your wallet first')
+      return
+    }
+
+    if (!connection) {
+      alert('Connection not initialized')
+      return
+    }
+
     setIsSwapping(true)
     
-    // Simulate swap transaction
-    await new Promise(resolve => setTimeout(resolve, 3000))
-    
-    // Mock successful swap
-    alert(`Successfully swapped ${fromAmount} ${fromToken} for ${toAmount} ${toToken}`)
-    setFromAmount('')
-    setToAmount('')
-    setIsSwapping(false)
+    try {
+      // Check if we have a SOL/SEEDS swap with Orca pool
+      if ((fromToken === 'SOL' && toToken === 'SEEDS') || (fromToken === 'SEEDS' && toToken === 'SOL')) {
+        const fromTokenData = tokens.find(t => t.symbol === fromToken)
+        const toTokenData = tokens.find(t => t.symbol === toToken)
+        
+        const inputMint = fromTokenData.mint
+        const outputMint = toTokenData.mint
+        const amountInLamports = fromToken === 'SOL' 
+          ? parseFloat(fromAmount) * LAMPORTS_PER_SOL 
+          : parseFloat(fromAmount) * 1_000_000 // 6 decimals for SEEDS
+        
+        console.log(`Executing Jupiter swap: ${fromAmount} ${fromToken} → ${toToken}`)
+        console.log(`Input mint: ${inputMint}`)
+        console.log(`Output mint: ${outputMint}`)
+        console.log(`Amount: ${amountInLamports}`)
+        
+        try {
+          // Get quote from Jupiter API
+          const quoteUrl = `https://quote-api.jup.ag/v6/quote?inputMint=${inputMint}&outputMint=${outputMint}&amount=${amountInLamports}&slippageBps=${parseFloat(slippage) * 100}`
+          console.log('Fetching quote from:', quoteUrl)
+          
+          const quoteResponse = await fetch(quoteUrl)
+          const quoteData = await quoteResponse.json()
+          
+          console.log('Quote API response:', quoteData)
+          
+          if (!quoteResponse.ok || quoteData.error) {
+            throw new Error(quoteData.error || 'Failed to get quote from Jupiter')
+          }
+          
+          // Get swap transaction from Jupiter API
+          const swapResponse = await fetch('https://quote-api.jup.ag/v6/swap', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              quoteResponse: quoteData,
+              userPublicKey: wallet.publicKey.toString(),
+              wrapAndUnwrapSol: true,
+            })
+          })
+
+          const swapData = await swapResponse.json()
+          console.log('Swap API response:', swapData)
+          
+          if (!swapResponse.ok || swapData.error) {
+            throw new Error(swapData.error || 'Failed to get swap transaction')
+          }
+
+          const { swapTransaction } = swapData
+          
+          if (!swapTransaction) {
+            throw new Error('No swap transaction returned from Jupiter API')
+          }
+          
+          // Deserialize the transaction
+          const binaryString = atob(swapTransaction)
+          const transactionBuf = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            transactionBuf[i] = binaryString.charCodeAt(i)
+          }
+          
+          const transaction = Transaction.from(transactionBuf)
+          
+          // Sign and send transaction
+          const signedTransaction = await wallet.signTransaction(transaction)
+          const signature = await connection.sendRawTransaction(signedTransaction.serialize())
+          
+          // Wait for confirmation
+          await connection.confirmTransaction(signature)
+          
+          alert(`🎉 Swap successful!\n\nTransaction: ${signature}\n\nView on Solana Explorer (devnet)`)
+          console.log(`View transaction: https://explorer.solana.com/tx/${signature}?cluster=devnet`)
+          
+        } catch (error) {
+          console.error('Jupiter swap error:', error)
+          
+          if (error.message.includes('not tradable') || error.message.includes('TOKEN_NOT_TRADABLE')) {
+            // Fallback for custom tokens not indexed by Jupiter
+            const orcaPoolUrl = `https://www.orca.so/pools?chainId=solanaDevnet&tokens=${inputMint}&tokens=${outputMint}`
+            
+            alert(`
+⚠️ Token Not Available on Jupiter
+
+Your SEEDS token isn't indexed by Jupiter yet. 
+Use your Orca pool directly:
+
+Pool: SOL ↔ SEEDS
+Amount: ${fromAmount} ${fromToken}
+
+Opening Orca pool...
+            `)
+            
+            window.open(orcaPoolUrl, '_blank')
+          } else {
+            alert(`Swap failed: ${error.message}`)
+          }
+        }
+        
+        // Refresh balances
+        await fetchBalances(wallet.publicKey, connection)
+      } else {
+        // For other token combinations, show message about available pairs
+        alert(`Direct swap not available. Currently supporting SOL ↔ SEEDS via Orca pool on devnet.`)
+      }
+      
+      setFromAmount('')
+      setToAmount('')
+    } catch (error) {
+      console.error('Swap failed:', error)
+      alert(`Swap failed: ${error.message}`)
+    } finally {
+      setIsSwapping(false)
+    }
   }
 
   const getExchangeRate = () => {
@@ -284,10 +464,21 @@ const TokenPurchase = () => {
             </div>
           )}
 
+          {/* Wallet Connection Check */}
+          {!wallet?.isConnected && (
+            <div className="flex items-start space-x-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">Wallet Not Connected</p>
+                <p>Please connect your Phantom wallet to perform swaps.</p>
+              </div>
+            </div>
+          )}
+
           {/* Swap Button */}
           <Button
             onClick={executeSwap}
-            disabled={!fromAmount || !toAmount || isSwapping}
+            disabled={!fromAmount || !toAmount || isSwapping || !wallet?.isConnected}
             className="w-full bg-green-600 hover:bg-green-700"
             size="lg"
           >
@@ -296,6 +487,8 @@ const TokenPurchase = () => {
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 <span>Swapping...</span>
               </div>
+            ) : !wallet?.isConnected ? (
+              'Connect Wallet to Swap'
             ) : (
               `Swap ${fromToken} for ${toToken}`
             )}
@@ -305,7 +498,7 @@ const TokenPurchase = () => {
           <div className="text-xs text-center text-gray-500">
             <div className="flex items-center justify-center space-x-1">
               <TrendingUp className="h-3 w-3" />
-              <span>Best route via Jupiter • Powered by Solana</span>
+              <span>SOL ↔ SEEDS via Orca Pool • Devnet</span>
             </div>
           </div>
         </CardContent>
