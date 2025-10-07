@@ -21,33 +21,6 @@ const WalletConnect = () => {
   // SEEDS token mint address on devnet
   const SEEDS_MINT = useMemo(() => new PublicKey('Eoyy5BhjVsRUTiyHoNbM675PAZHdyX7qGr1yndZezYQG'), [])
 
-  useEffect(() => {
-    // Initialize Solana devnet connection
-    const conn = new Connection('https://api.devnet.solana.com', 'confirmed')
-    setConnection(conn)
-
-    // Check if Phantom wallet is available
-    const getProvider = () => {
-      if ('phantom' in window) {
-        const provider = window.phantom?.solana
-        if (provider?.isPhantom) {
-          return provider
-        }
-      }
-      return null
-    }
-
-    const phantom = getProvider()
-    setProvider(phantom)
-
-    // Check if already connected
-    if (phantom?.isConnected) {
-      setIsConnected(true)
-      setWalletAddress(phantom.publicKey.toString())
-      fetchBalance(phantom.publicKey, conn)
-    }
-  }, [fetchBalance])
-
   const fetchBalance = useCallback(async (publicKey, conn) => {
     try {
       // Fetch SOL balance
@@ -74,6 +47,33 @@ const WalletConnect = () => {
       console.error('Error fetching balance:', error)
     }
   }, [SEEDS_MINT])
+
+  useEffect(() => {
+    // Initialize Solana devnet connection
+    const conn = new Connection('https://api.devnet.solana.com', 'confirmed')
+    setConnection(conn)
+
+    // Check if Phantom wallet is available
+    const getProvider = () => {
+      if ('phantom' in window) {
+        const provider = window.phantom?.solana
+        if (provider?.isPhantom) {
+          return provider
+        }
+      }
+      return null
+    }
+
+    const phantom = getProvider()
+    setProvider(phantom)
+
+    // Check if already connected
+    if (phantom?.isConnected) {
+      setIsConnected(true)
+      setWalletAddress(phantom.publicKey.toString())
+      fetchBalance(phantom.publicKey, conn)
+    }
+  }, [fetchBalance])
 
   const connectWallet = async () => {
     if (!provider) {
