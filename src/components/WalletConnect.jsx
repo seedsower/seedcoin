@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button.jsx'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
-import { Wallet, Copy, ExternalLink, AlertCircle } from 'lucide-react'
+import { Wallet, Copy, ExternalLink, AlertCircle, RefreshCw } from 'lucide-react'
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js'
+import { getAssociatedTokenAddress, getAccount } from '@solana/spl-token'
 
 const WalletConnect = () => {
   const [isConnected, setIsConnected] = useState(false)
@@ -16,6 +17,9 @@ const WalletConnect = () => {
   const [isConnecting, setIsConnecting] = useState(false)
   const [connection, setConnection] = useState(null)
   const [provider, setProvider] = useState(null)
+  
+  // SEEDS token mint address on devnet
+  const SEEDS_MINT = useMemo(() => new PublicKey('Eoyy5BhjVsRUTiyHoNbM675PAZHdyX7qGr1yndZezYQG'), [])
 
   useEffect(() => {
     // Initialize Solana devnet connection
@@ -42,19 +46,34 @@ const WalletConnect = () => {
       setWalletAddress(phantom.publicKey.toString())
       fetchBalance(phantom.publicKey, conn)
     }
-  }, [])
+  }, [fetchBalance])
 
-  const fetchBalance = async (publicKey, conn) => {
+  const fetchBalance = useCallback(async (publicKey, conn) => {
     try {
-      const balance = await conn.getBalance(publicKey)
+      // Fetch SOL balance
+      const solBalance = await conn.getBalance(publicKey)
+      
+      // Fetch SEEDS token balance
+      let seedsBalance = 0
+      try {
+        const seedsTokenAccount = await getAssociatedTokenAddress(SEEDS_MINT, publicKey)
+        const accountInfo = await getAccount(conn, seedsTokenAccount)
+        seedsBalance = Number(accountInfo.amount) / Math.pow(10, 6) // SEEDS has 6 decimals
+      } catch {
+        // Token account doesn't exist or no balance
+        console.log('No SEEDS token account found or balance is 0')
+        seedsBalance = 0
+      }
+      
       setBalance(prev => ({
         ...prev,
-        sol: balance / LAMPORTS_PER_SOL
+        sol: solBalance / LAMPORTS_PER_SOL,
+        seeds: seedsBalance
       }))
     } catch (error) {
       console.error('Error fetching balance:', error)
     }
-  }
+  }, [SEEDS_MINT])
 
   const connectWallet = async () => {
     if (!provider) {
@@ -199,7 +218,17 @@ const WalletConnect = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <h4 className="font-medium mb-3">Token Balances</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium">Token Balances</h4>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => fetchBalance(new PublicKey(walletAddress), connection)}
+              className="h-6 w-6 p-0"
+            >
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          </div>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <div className="flex items-center space-x-2">
