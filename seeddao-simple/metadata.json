@@ -1,0 +1,46 @@
+{
+  "name": "Seed Stable",
+  "symbol": "SEEDS",
+  "description": "SeedStable (SEEDS) is a decentralized stablecoin backed by agricultural seed reserves and real-world assets. Part of the SeedCoin ecosystem that bridges traditional agriculture with decentralized finance.",
+  "image": "https://raw.githubusercontent.com/seedcoin/assets/main/seeds-logo.png",
+  "external_url": "https://seedcoin.io",
+  "attributes": [
+    {
+      "trait_type": "Token Type",
+      "value": "Stablecoin"
+    },
+    {
+      "trait_type": "Backing",
+      "value": "Agricultural Seeds"
+    },
+    {
+      "trait_type": "Network",
+      "value": "Solana"
+    },
+    {
+      "trait_type": "Standard",
+      "value": "SPL Token"
+    },
+    {
+      "trait_type": "Decimals",
+      "value": "6"
+    },
+    {
+      "trait_type": "Use Case",
+      "value": "DeFi Stablecoin"
+    }
+  ],
+  "properties": {
+    "category": "currency",
+    "creators": [
+      {
+        "address": "SeedCoinProtocol",
+        "share": 100
+      }
+    ]
+  },
+  "collection": {
+    "name": "SeedCoin Ecosystem",
+    "family": "SeedCoin"
+  }
+}

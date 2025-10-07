@@ -1,0 +1,10 @@
+{
+  "programId": "imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR",
+  "sdaoMint": "9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt",
+  "daoState": "NDWTYL8UdbXpjWULCTUSMPS2xsEbCmrKhQ56AKcA43Q",
+  "treasury": "6vTPi3zkMTLuuegQjLd1SZ7A5RkeCYigT1KLK7dnMrpM",
+  "walletTokenAccount": "7LF4SizvjbtjocHhQaJQ5N5xHQAcfSA47WVmxzxouvee",
+  "network": "devnet",
+  "initialSupply": 10000000000000,
+  "decimals": 6
+}

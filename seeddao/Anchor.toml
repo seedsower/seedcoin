@@ -1,0 +1,19 @@
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+seeddao = "imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR"
+
+[programs.localnet]
+seeddao = "imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

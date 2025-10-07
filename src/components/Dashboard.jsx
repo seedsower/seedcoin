@@ -96,7 +96,9 @@ const Dashboard = () => {
       staked: 250.00,
       rewards: 12.34,
       lockPeriod: '90 days',
-      status: 'active'
+      status: 'active',
+      mint: '9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt', // Real SDAO mint
+      programId: 'imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR'
     },
     {
       token: 'SEEDS',

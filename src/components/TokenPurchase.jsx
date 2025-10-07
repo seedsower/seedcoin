@@ -90,7 +90,7 @@ const TokenPurchase = () => {
       symbol: 'SDAO', 
       name: 'SeedDAO', 
       color: 'bg-purple-100 text-purple-800',
-      mint: null
+      mint: '9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt' // Real SDAO mint address
     },
     { 
       symbol: 'USDC', 

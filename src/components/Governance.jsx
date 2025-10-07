@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge.jsx'
 import { Progress } from '@/components/ui/progress.jsx'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.jsx'
 import { Vote, Plus, Clock, CheckCircle, XCircle, Users, TrendingUp } from 'lucide-react'
+import SeedDAOIntegration from './SeedDAOIntegration.jsx'
 
 const Governance = () => {
   const [activeTab, setActiveTab] = useState('proposals')
@@ -188,9 +189,10 @@ const Governance = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="proposals">Proposals</TabsTrigger>
           <TabsTrigger value="create">Create Proposal</TabsTrigger>
+          <TabsTrigger value="dao">SeedDAO</TabsTrigger>
           <TabsTrigger value="history">Voting History</TabsTrigger>
         </TabsList>
 
@@ -362,6 +364,14 @@ const Governance = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* SeedDAO Integration Tab */}
+        <TabsContent value="dao" className="space-y-4">
+          <SeedDAOIntegration 
+            walletAddress="Dm1PKxJGqFQdwbqQUABs3tBedYKnEcMJ2ubTRD1hcwNQ" 
+            connection={null}
+          />
         </TabsContent>
 
         {/* Voting History Tab */}

@@ -18,8 +18,9 @@ const WalletConnect = () => {
   const [connection, setConnection] = useState(null)
   const [provider, setProvider] = useState(null)
   
-  // SEEDS token mint address on devnet
+  // Token mint addresses on devnet
   const SEEDS_MINT = useMemo(() => new PublicKey('Eoyy5BhjVsRUTiyHoNbM675PAZHdyX7qGr1yndZezYQG'), [])
+  const SDAO_MINT = useMemo(() => new PublicKey('9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt'), [])
 
   const fetchBalance = useCallback(async (publicKey, conn) => {
     try {
@@ -37,16 +38,29 @@ const WalletConnect = () => {
         console.log('No SEEDS token account found or balance is 0')
         seedsBalance = 0
       }
+
+      // Fetch SDAO token balance
+      let sdaoBalance = 0
+      try {
+        const sdaoTokenAccount = await getAssociatedTokenAddress(SDAO_MINT, publicKey)
+        const accountInfo = await getAccount(conn, sdaoTokenAccount)
+        sdaoBalance = Number(accountInfo.amount) / Math.pow(10, 6) // SDAO has 6 decimals
+      } catch {
+        // Token account doesn't exist or no balance
+        console.log('No SDAO token account found or balance is 0')
+        sdaoBalance = 0
+      }
       
       setBalance(prev => ({
         ...prev,
         sol: solBalance / LAMPORTS_PER_SOL,
-        seeds: seedsBalance
+        seeds: seedsBalance,
+        sdao: sdaoBalance
       }))
     } catch (error) {
       console.error('Error fetching balance:', error)
     }
-  }, [SEEDS_MINT])
+  }, [SEEDS_MINT, SDAO_MINT])
 
   useEffect(() => {
     // Initialize Solana devnet connection
