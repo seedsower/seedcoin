@@ -19,7 +19,7 @@ import {
   BarChart3,
   Vote
 } from 'lucide-react'
-import LiveStaking from './LiveStaking.jsx'
+import RealLiveStaking from './RealLiveStaking.jsx'
 import Analytics from './Analytics.jsx'
 import SeedStableProtocol from './SeedStableProtocol.jsx'
 import TokenPurchase from './TokenPurchase.jsx'
@@ -278,9 +278,9 @@ const Dashboard = () => {
                 <TokenPurchase />
               </TabsContent>
 
-              {/* Stake Tab - Live SDAO Staking */}
+              {/* Stake Tab - Real Live SDAO Staking */}
               <TabsContent value="stake" className="space-y-6">
-                <LiveStaking 
+                <RealLiveStaking 
                   walletAddress="Dm1PKxJGqFQdwbqQUABs3tBedYKnEcMJ2ubTRD1hcwNQ" 
                   connection={null}
                 />
