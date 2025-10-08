@@ -1,0 +1,36 @@
+{
+  "timestamp": "2025-10-08T17:37:11.161Z",
+  "network": "devnet",
+  "tests": {
+    "sdaoBalance": {
+      "status": "passed",
+      "value": 9000000
+    },
+    "stakingProgram": {
+      "status": "failed"
+    },
+    "stakingOperations": {
+      "status": "passed",
+      "count": 3
+    },
+    "rewardCalculations": {
+      "status": "passed",
+      "apy": 18.5
+    },
+    "frontendIntegration": {
+      "status": "passed",
+      "components": 4
+    }
+  },
+  "configuration": {
+    "walletAddress": "Dm1PKxJGqFQdwbqQUABs3tBedYKnEcMJ2ubTRD1hcwNQ",
+    "sdaoMint": "9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt",
+    "walletTokenAccount": "7LF4SizvjbtjocHhQaJQ5N5xHQAcfSA47WVmxzxouvee",
+    "stakingProgramId": "AnwNEDsBwSHqy3CdKLv2kieXD5QLqNqdVxEB8zCfPrrC"
+  },
+  "summary": {
+    "totalTests": 5,
+    "passed": 4,
+    "failed": 1
+  }
+}

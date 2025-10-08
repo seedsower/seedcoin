@@ -1,0 +1,35 @@
+{
+  "config": {
+    "poolName": "SDAO Staking Pool",
+    "apy": 18.5,
+    "minStakeAmount": 100,
+    "lockPeriod": 0,
+    "sdaoMint": "9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt",
+    "walletTokenAccount": "7LF4SizvjbtjocHhQaJQ5N5xHQAcfSA47WVmxzxouvee",
+    "stakingProgramId": "AnwNEDsBwSHqy3CdKLv2kieXD5QLqNqdVxEB8zCfPrrC",
+    "stakingVault": "ATNtpWkZcZTAupMKDDDzQf8FW6Cv4c1MQ1T8n1YZJsg",
+    "rewardsVault": "9g9Qnb5Tek8EEFU3Xz7QamGQR5UMR7sVtCJjDNrfD8Qu",
+    "totalStaked": 0,
+    "totalRewards": 0,
+    "activeStakers": 0
+  },
+  "operations": {
+    "stake": {
+      "amount": 1000,
+      "estimatedRewards": 185,
+      "duration": "1 year"
+    },
+    "unstake": {
+      "amount": 500,
+      "penalty": 0,
+      "cooldown": "0 days"
+    },
+    "claimRewards": {
+      "available": 45.5,
+      "frequency": "Anytime"
+    }
+  },
+  "network": "devnet",
+  "status": "ready",
+  "setupTime": "2025-10-08T17:34:03.157Z"
+}

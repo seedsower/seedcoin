@@ -19,6 +19,7 @@ import {
   BarChart3,
   Vote
 } from 'lucide-react'
+import LiveStaking from './LiveStaking.jsx'
 import Analytics from './Analytics.jsx'
 import SeedStableProtocol from './SeedStableProtocol.jsx'
 import TokenPurchase from './TokenPurchase.jsx'
@@ -277,55 +278,12 @@ const Dashboard = () => {
                 <TokenPurchase />
               </TabsContent>
 
-              {/* Stake Tab */}
+              {/* Stake Tab - Live SDAO Staking */}
               <TabsContent value="stake" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Active Staking Positions</CardTitle>
-                    <CardDescription>
-                      Your current staking positions and rewards
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {stakingPools.map((pool, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center space-x-2">
-                              <Badge variant="secondary" className={
-                                pool.token === 'SDAO' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'
-                              }>
-                                {pool.token}
-                              </Badge>
-                              <span className="font-medium">{pool.apy}% APY</span>
-                            </div>
-                            <Badge variant="outline" className="text-green-600">
-                              {pool.status}
-                            </Badge>
-                          </div>
-                          <div className="grid grid-cols-3 gap-4 text-sm">
-                            <div>
-                              <p className="text-gray-600 dark:text-gray-400">Staked</p>
-                              <p className="font-medium">{pool.staked} {pool.token}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 dark:text-gray-400">Rewards</p>
-                              <p className="font-medium text-green-600">{pool.rewards} {pool.token}</p>
-                            </div>
-                            <div>
-                              <p className="text-gray-600 dark:text-gray-400">Lock Period</p>
-                              <p className="font-medium">{pool.lockPeriod}</p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2 mt-4">
-                            <Button size="sm" variant="outline">Claim Rewards</Button>
-                            <Button size="sm" variant="outline">Unstake</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <LiveStaking 
+                  walletAddress="Dm1PKxJGqFQdwbqQUABs3tBedYKnEcMJ2ubTRD1hcwNQ" 
+                  connection={null}
+                />
               </TabsContent>
 
               {/* Governance Tab */}
