@@ -32,16 +32,53 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
 
   const connection = new Connection(LIVE_CONFIG.NETWORK, 'confirmed');
 
-  // Auto-connect wallet
+  // Load persisted staking data
+  const loadPersistedData = (walletAddr) => {
+    if (!walletAddr) return;
+    
+    try {
+      // Load staked amount
+      const storedStake = localStorage.getItem(`staked_${walletAddr}`);
+      if (storedStake) {
+        const stakedAmt = parseFloat(storedStake);
+        setStakedAmount(stakedAmt);
+        console.log('Loaded persisted staked amount:', stakedAmt);
+      }
+      
+      // Load staking history
+      const storedHistory = localStorage.getItem(`stakingHistory_${walletAddr}`);
+      if (storedHistory) {
+        const history = JSON.parse(storedHistory);
+        setStakingHistory(history);
+        console.log('Loaded persisted staking history:', history.length, 'transactions');
+      }
+      
+      // Calculate rewards based on stored data
+      if (storedStake) {
+        const rewards = calculateRealTimeRewards(parseFloat(storedStake));
+        setPendingRewards(rewards);
+      }
+    } catch (error) {
+      console.log('Error loading persisted data:', error);
+    }
+  };
+
+  // Auto-connect wallet and load data
   useEffect(() => {
     const autoConnect = async () => {
       if (window.solana && window.solana.isPhantom) {
         try {
           const response = await window.solana.connect({ onlyIfTrusted: true });
           if (response.publicKey) {
-            setConnectedWallet(response.publicKey.toString());
+            const walletAddr = response.publicKey.toString();
+            setConnectedWallet(walletAddr);
             setIsWalletConnected(true);
-            await fetchLiveData(response.publicKey.toString());
+            
+            // Load persisted data first
+            loadPersistedData(walletAddr);
+            
+            // Then fetch fresh blockchain data
+            await fetchLiveData(walletAddr);
           }
         } catch (error) {
           console.log('No auto-connection available');
@@ -51,6 +88,11 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       if (walletAddress) {
         setConnectedWallet(walletAddress);
         setIsWalletConnected(true);
+        
+        // Load persisted data first
+        loadPersistedData(walletAddress);
+        
+        // Then fetch fresh blockchain data
         await fetchLiveData(walletAddress);
       }
     };
@@ -216,12 +258,17 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
         timestamp: new Date().toISOString(),
         confirmed: true
       };
-      setStakingHistory(prev => [stakingRecord, ...prev]);
+      const newHistory = [stakingRecord, ...stakingHistory];
+      setStakingHistory(newHistory);
       
       // Update staked amount immediately and store it
       const newStakedAmount = stakedAmount + amount;
       setStakedAmount(newStakedAmount);
-      localStorage.setItem(`staked_${userPubkey.toString()}`, newStakedAmount.toString());
+      
+      // Persist both staked amount and history
+      const walletAddr = userPubkey.toString();
+      localStorage.setItem(`staked_${walletAddr}`, newStakedAmount.toString());
+      localStorage.setItem(`stakingHistory_${walletAddr}`, JSON.stringify(newHistory));
       
       // Wait a moment for blockchain to update, then refresh balance data
       setTimeout(async () => {
@@ -271,12 +318,6 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       setSdaoBalance(prev => prev + amount + pendingRewards);
       setPendingRewards(0);
       
-      // Store updated staked amount
-      if (isWalletConnected && window.solana) {
-        const userPubkey = window.solana.publicKey;
-        localStorage.setItem(`staked_${userPubkey.toString()}`, newStakedAmount.toString());
-      }
-      
       // Add to history
       const unstakeRecord = {
         type: 'unstake',
@@ -286,7 +327,15 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
         timestamp: new Date().toISOString(),
         confirmed: true
       };
-      setStakingHistory(prev => [unstakeRecord, ...prev]);
+      const newHistory = [unstakeRecord, ...stakingHistory];
+      setStakingHistory(newHistory);
+      
+      // Store updated staked amount and history
+      if (isWalletConnected && window.solana) {
+        const walletAddr = window.solana.publicKey.toString();
+        localStorage.setItem(`staked_${walletAddr}`, newStakedAmount.toString());
+        localStorage.setItem(`stakingHistory_${walletAddr}`, JSON.stringify(newHistory));
+      }
       
       alert(`✅ COMPLETELY LIVE UNSTAKING SUCCESSFUL!\n\n` +
             `Unstaked: ${amount} SDAO\n` +
@@ -300,15 +349,21 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
     }
   };
 
-  // Connect wallet
+  // Connect wallet function
   const connectWallet = async () => {
     try {
       if (window.solana && window.solana.isPhantom) {
         const response = await window.solana.connect();
         if (response.publicKey) {
-          setConnectedWallet(response.publicKey.toString());
+          const walletAddr = response.publicKey.toString();
+          setConnectedWallet(walletAddr);
           setIsWalletConnected(true);
-          await fetchLiveData(response.publicKey.toString());
+          
+          // Load persisted data first
+          loadPersistedData(walletAddr);
+          
+          // Then fetch fresh blockchain data
+          await fetchLiveData(walletAddr);
         }
       } else {
         setError('Phantom wallet not found. Please install Phantom wallet.');
