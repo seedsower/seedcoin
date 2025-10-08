@@ -28,5 +28,15 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Fix 404 errors on page refresh for client-side routing
+    historyApiFallback: true,
+  },
+  // Also configure for build
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
   },
 })

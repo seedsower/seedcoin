@@ -39,10 +39,23 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
     try {
       // Load staked amount
       const storedStake = localStorage.getItem(`staked_${walletAddr}`);
-      if (storedStake) {
+      if (storedStake && storedStake !== '0') {
         const stakedAmt = parseFloat(storedStake);
         setStakedAmount(stakedAmt);
-        console.log('Loaded persisted staked amount:', stakedAmt);
+        console.log('✅ Loaded persisted staked amount:', stakedAmt, 'SDAO');
+        
+        // Load last stake time for reward calculation
+        const storedStakeTime = localStorage.getItem(`stakeTime_${walletAddr}`);
+        const stakeTime = storedStakeTime ? parseInt(storedStakeTime) : Date.now();
+        
+        // Calculate rewards based on time elapsed since last stake
+        const rewards = calculateRealTimeRewards(stakedAmt, stakeTime);
+        setPendingRewards(rewards);
+        console.log('✅ Calculated pending rewards:', rewards.toFixed(4), 'SDAO');
+      } else {
+        setStakedAmount(0);
+        setPendingRewards(0);
+        console.log('No staked amount found for wallet:', walletAddr);
       }
       
       // Load staking history
@@ -50,16 +63,15 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       if (storedHistory) {
         const history = JSON.parse(storedHistory);
         setStakingHistory(history);
-        console.log('Loaded persisted staking history:', history.length, 'transactions');
-      }
-      
-      // Calculate rewards based on stored data
-      if (storedStake) {
-        const rewards = calculateRealTimeRewards(parseFloat(storedStake));
-        setPendingRewards(rewards);
+        console.log('✅ Loaded persisted staking history:', history.length, 'transactions');
+      } else {
+        setStakingHistory([]);
       }
     } catch (error) {
-      console.log('Error loading persisted data:', error);
+      console.log('❌ Error loading persisted data:', error);
+      setStakedAmount(0);
+      setPendingRewards(0);
+      setStakingHistory([]);
     }
   };
 
@@ -156,19 +168,20 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
   };
 
   // Calculate REAL-TIME rewards
-  const calculateRealTimeRewards = (stakedAmount) => {
-    if (!stakedAmount) return 0;
+  const calculateRealTimeRewards = (stakedAmount, stakeTime = null) => {
+    if (!stakedAmount || stakedAmount <= 0) return 0;
     
-    // Real APY calculation based on current time
-    const dailyRate = LIVE_CONFIG.APY / 100 / 365;
-    const secondsInDay = 24 * 60 * 60;
-    const currentTime = Date.now() / 1000;
+    // Use provided stake time or current time
+    const startTime = stakeTime || Date.now();
+    const currentTime = Date.now();
+    const timeElapsed = Math.max(0, (currentTime - startTime) / 1000); // seconds
     
-    // Simulate time-based rewards (in real implementation would use last claim time)
-    const timeElapsed = 3600; // 1 hour for demo
-    const rewards = (stakedAmount * dailyRate * timeElapsed) / secondsInDay;
+    // Real APY calculation: (staked * APY * time_elapsed) / seconds_per_year
+    const secondsPerYear = 365 * 24 * 60 * 60;
+    const yearlyRate = LIVE_CONFIG.APY / 100;
+    const rewards = (stakedAmount * yearlyRate * timeElapsed) / secondsPerYear;
     
-    return rewards;
+    return Math.max(0, rewards);
   };
 
   // COMPLETELY LIVE STAKING - REAL SPL TOKEN TRANSFER
@@ -263,11 +276,13 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       
       // Update staked amount immediately and store it
       const newStakedAmount = stakedAmount + amount;
+      const stakeTime = Date.now();
       setStakedAmount(newStakedAmount);
       
-      // Persist both staked amount and history
+      // Persist staked amount, history, and stake time
       const walletAddr = userPubkey.toString();
       localStorage.setItem(`staked_${walletAddr}`, newStakedAmount.toString());
+      localStorage.setItem(`stakeTime_${walletAddr}`, stakeTime.toString());
       localStorage.setItem(`stakingHistory_${walletAddr}`, JSON.stringify(newHistory));
       
       // Wait a moment for blockchain to update, then refresh balance data
@@ -375,15 +390,18 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
 
   // Real-time rewards update
   useEffect(() => {
-    if (stakedAmount > 0) {
+    if (stakedAmount > 0 && connectedWallet) {
       const interval = setInterval(() => {
-        const rewards = calculateRealTimeRewards(stakedAmount);
+        // Get the stored stake time for accurate reward calculation
+        const storedStakeTime = localStorage.getItem(`stakeTime_${connectedWallet}`);
+        const stakeTime = storedStakeTime ? parseInt(storedStakeTime) : Date.now();
+        const rewards = calculateRealTimeRewards(stakedAmount, stakeTime);
         setPendingRewards(rewards);
       }, 1000);
       
       return () => clearInterval(interval);
     }
-  }, [stakedAmount]);
+  }, [stakedAmount, connectedWallet]);
 
   if (!isWalletConnected) {
     return (
