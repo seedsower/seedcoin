@@ -91,18 +91,20 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       const vaultAccount = await getAccount(connection, LIVE_CONFIG.STAKING_VAULT);
       const totalVaultBalance = Number(vaultAccount.amount) / Math.pow(10, LIVE_CONFIG.DECIMALS);
       
-      // For demo purposes, assume user has staked some amount
-      // In real implementation, this would query the staking program state
-      const mockUserStake = 0; // Would be fetched from program state
-      setStakedAmount(mockUserStake);
+      // Get user's current staked amount from local storage or state
+      // In a real implementation, this would query the staking program state
+      const storedStake = localStorage.getItem(`staked_${walletPubkey.toString()}`);
+      const userStakedAmount = storedStake ? parseFloat(storedStake) : stakedAmount;
       
-      // Calculate real-time rewards
-      const rewards = calculateRealTimeRewards(mockUserStake);
+      setStakedAmount(userStakedAmount);
+      
+      // Calculate real-time rewards based on staked amount
+      const rewards = calculateRealTimeRewards(userStakedAmount);
       setPendingRewards(rewards);
       
       console.log('✅ Live staking data fetched from blockchain');
       console.log('- Vault Balance:', totalVaultBalance.toLocaleString(), 'SDAO');
-      console.log('- User Staked:', mockUserStake, 'SDAO');
+      console.log('- User Staked:', userStakedAmount, 'SDAO');
       
     } catch (error) {
       console.log('No staking data found - user has not staked yet');
@@ -203,9 +205,7 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       console.log('✅ REAL TRANSACTION CONFIRMED ON BLOCKCHAIN');
       console.log('✅ SDAO TOKENS ACTUALLY TRANSFERRED TO STAKING VAULT');
       
-      // Update UI with REAL data
-      setSdaoBalance(prev => prev - amount);
-      setStakedAmount(prev => prev + amount);
+      // Clear form first
       setStakeAmount('');
       
       // Add to staking history
@@ -218,8 +218,15 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       };
       setStakingHistory(prev => [stakingRecord, ...prev]);
       
-      // Refresh REAL data from blockchain
-      await fetchLiveData(userPubkey.toString());
+      // Update staked amount immediately and store it
+      const newStakedAmount = stakedAmount + amount;
+      setStakedAmount(newStakedAmount);
+      localStorage.setItem(`staked_${userPubkey.toString()}`, newStakedAmount.toString());
+      
+      // Wait a moment for blockchain to update, then refresh balance data
+      setTimeout(async () => {
+        await fetchLiveData(userPubkey.toString());
+      }, 2000);
       
       alert(`✅ COMPLETELY LIVE STAKING SUCCESSFUL!\n\n` +
             `Amount: ${amount} SDAO\n` +
@@ -258,10 +265,17 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
       // In production, this would be a real program instruction
       await new Promise(resolve => setTimeout(resolve, 3000));
       
-      // Update balances
-      setStakedAmount(prev => prev - amount);
+      // Update balances and store
+      const newStakedAmount = stakedAmount - amount;
+      setStakedAmount(newStakedAmount);
       setSdaoBalance(prev => prev + amount + pendingRewards);
       setPendingRewards(0);
+      
+      // Store updated staked amount
+      if (isWalletConnected && window.solana) {
+        const userPubkey = window.solana.publicKey;
+        localStorage.setItem(`staked_${userPubkey.toString()}`, newStakedAmount.toString());
+      }
       
       // Add to history
       const unstakeRecord = {
@@ -339,63 +353,61 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
 
   return (
     <div className="space-y-6">
-      {/* COMPLETELY LIVE STATUS */}
-      <div className="p-6 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-lg border-4 border-red-600">
+      {/* Wallet Status - Simple */}
+      <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">🔴 COMPLETELY LIVE ON SOLANA DEVNET</h2>
-            <p className="text-lg">Real SPL token transfers • Actual blockchain transactions • Zero demo code</p>
-            <p className="text-sm opacity-90">Connected: {connectedWallet.slice(0, 8)}...{connectedWallet.slice(-8)}</p>
+            <p className="text-sm font-medium text-green-800">Wallet Connected</p>
+            <p className="text-xs text-green-600">{connectedWallet.slice(0, 8)}...{connectedWallet.slice(-8)}</p>
           </div>
-          <div className="text-4xl animate-pulse">🚀</div>
+          <div className="text-green-600">✅</div>
         </div>
       </div>
 
-      {/* LIVE BALANCES */}
+      {/* BALANCES */}
       <div className="grid md:grid-cols-4 gap-4">
-        <div className="p-4 border-2 border-green-500 rounded-lg bg-green-50">
+        <div className="p-4 border rounded-lg bg-green-50">
           <div className="text-center">
-            <p className="text-sm font-semibold text-green-800">🔴 LIVE SDAO BALANCE</p>
-            <p className="text-3xl font-bold text-green-600">
+            <p className="text-sm text-gray-600">SDAO Balance</p>
+            <p className="text-2xl font-bold text-green-600">
               {loading ? 'Loading...' : sdaoBalance.toLocaleString()}
             </p>
-            <p className="text-xs text-green-700">Real tokens on devnet</p>
+            <p className="text-xs text-gray-500">Available</p>
           </div>
         </div>
         
-        <div className="p-4 border-2 border-blue-500 rounded-lg bg-blue-50">
+        <div className="p-4 border rounded-lg bg-blue-50">
           <div className="text-center">
-            <p className="text-sm font-semibold text-blue-800">🔴 ACTUALLY STAKED</p>
-            <p className="text-3xl font-bold text-blue-600">
+            <p className="text-sm text-gray-600">Staked Amount</p>
+            <p className="text-2xl font-bold text-blue-600">
               {stakedAmount.toLocaleString()}
             </p>
-            <p className="text-xs text-blue-700">Real staked amount</p>
+            <p className="text-xs text-gray-500">Currently staked</p>
           </div>
         </div>
         
-        <div className="p-4 border-2 border-purple-500 rounded-lg bg-purple-50">
+        <div className="p-4 border rounded-lg bg-purple-50">
           <div className="text-center">
-            <p className="text-sm font-semibold text-purple-800">🔴 LIVE REWARDS</p>
-            <p className="text-3xl font-bold text-purple-600">
-              {pendingRewards.toFixed(6)}
+            <p className="text-sm text-gray-600">Pending Rewards</p>
+            <p className="text-2xl font-bold text-purple-600">
+              {pendingRewards.toFixed(4)}
             </p>
-            <p className="text-xs text-purple-700">Real-time accrual</p>
+            <p className="text-xs text-gray-500">Accrued rewards</p>
           </div>
         </div>
         
-        <div className="p-4 border-2 border-orange-500 rounded-lg bg-orange-50">
+        <div className="p-4 border rounded-lg bg-orange-50">
           <div className="text-center">
-            <p className="text-sm font-semibold text-orange-800">🔴 LIVE APY</p>
-            <p className="text-3xl font-bold text-orange-600">{LIVE_CONFIG.APY}%</p>
-            <p className="text-xs text-orange-700">Actual yield rate</p>
+            <p className="text-sm text-gray-600">APY</p>
+            <p className="text-2xl font-bold text-orange-600">{LIVE_CONFIG.APY}%</p>
+            <p className="text-xs text-gray-500">Annual yield</p>
           </div>
         </div>
       </div>
 
-      {/* COMPLETELY LIVE STAKING INTERFACE */}
-      <div className="p-6 border-4 border-blue-600 rounded-lg bg-blue-50">
-        <h3 className="text-xl font-bold mb-4 text-blue-800">🔴 COMPLETELY LIVE STAKING INTERFACE</h3>
-        <p className="text-sm text-blue-700 mb-4">🔴 REAL SPL TOKEN TRANSFERS • ACTUAL BLOCKCHAIN CONFIRMATIONS • NO SIMULATION</p>
+      {/* STAKING INTERFACE */}
+      <div className="p-6 border rounded-lg bg-blue-50">
+        <h3 className="text-lg font-semibold mb-4 text-blue-800">Stake SDAO Tokens</h3>
         
         {error && (
           <div className="mb-4 p-4 bg-red-50 border-2 border-red-200 rounded-lg">
@@ -405,8 +417,8 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold mb-2 text-blue-800">
-              🔴 AMOUNT TO STAKE (REAL SDAO TOKENS)
+            <label className="block text-sm font-medium mb-2 text-blue-800">
+              Amount to Stake (SDAO Tokens)
             </label>
             <div className="flex space-x-2">
               <input
@@ -426,8 +438,8 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
                 MAX
               </button>
             </div>
-            <p className="text-sm text-blue-700 mt-2 font-semibold">
-              🔴 Available: {sdaoBalance.toLocaleString()} SDAO | Min: {LIVE_CONFIG.MIN_STAKE} SDAO
+            <p className="text-sm text-blue-700 mt-2">
+              Available: {sdaoBalance.toLocaleString()} SDAO | Min: {LIVE_CONFIG.MIN_STAKE} SDAO
             </p>
           </div>
 
@@ -435,13 +447,13 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
             <div className="p-4 bg-green-50 border-2 border-green-300 rounded-lg">
               <div className="text-sm space-y-2 font-semibold">
                 <div className="flex justify-between">
-                  <span>🔴 Daily Rewards:</span>
+                  <span>Daily Rewards:</span>
                   <span className="text-green-600">
-                    {(parseFloat(stakeAmount) * LIVE_CONFIG.APY / 100 / 365).toFixed(6)} SDAO
+                    {(parseFloat(stakeAmount) * LIVE_CONFIG.APY / 100 / 365).toFixed(4)} SDAO
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>🔴 Annual Rewards:</span>
+                  <span>Annual Rewards:</span>
                   <span className="text-green-600">
                     {(parseFloat(stakeAmount) * LIVE_CONFIG.APY / 100).toFixed(2)} SDAO
                   </span>
@@ -454,32 +466,32 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
             <button
               onClick={executeCompletelyLiveStaking}
               disabled={loading || !stakeAmount || parseFloat(stakeAmount) < LIVE_CONFIG.MIN_STAKE}
-              className="bg-red-600 text-white py-4 px-6 rounded-md hover:bg-red-700 disabled:bg-gray-400 font-bold text-lg border-2 border-red-800"
+              className="bg-green-600 text-white py-3 px-6 rounded-md hover:bg-green-700 disabled:bg-gray-400 font-semibold"
             >
-              {loading ? '🔄 PROCESSING REAL TRANSACTION...' : '🔴 STAKE REAL TOKENS NOW'}
+              {loading ? 'Processing Transaction...' : 'Stake SDAO Tokens'}
             </button>
             
             <button
               onClick={() => executeCompletelyLiveUnstaking(stakedAmount)}
               disabled={loading || stakedAmount <= 0}
-              className="bg-blue-600 text-white py-4 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-bold text-lg border-2 border-blue-800"
+              className="bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 font-semibold"
             >
-              {loading ? '🔄 PROCESSING...' : '🔴 UNSTAKE ALL + REWARDS'}
+              {loading ? 'Processing...' : 'Unstake All + Rewards'}
             </button>
           </div>
         </div>
       </div>
 
-      {/* LIVE TRANSACTION HISTORY */}
+      {/* TRANSACTION HISTORY */}
       {stakingHistory.length > 0 && (
-        <div className="p-4 border-2 border-gray-400 rounded-lg bg-gray-50">
-          <h4 className="font-bold mb-3 text-gray-800">🔴 LIVE TRANSACTION HISTORY</h4>
+        <div className="p-4 border rounded-lg bg-gray-50">
+          <h4 className="font-semibold mb-3 text-gray-800">Transaction History</h4>
           <div className="space-y-2">
             {stakingHistory.slice(0, 5).map((record, index) => (
               <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
                 <div>
-                  <span className="font-semibold text-sm">
-                    {record.type === 'stake' ? '🔴 STAKED' : '🔴 UNSTAKED'} {record.amount} SDAO
+                  <span className="font-medium text-sm">
+                    {record.type === 'stake' ? 'Staked' : 'Unstaked'} {record.amount} SDAO
                   </span>
                   {record.rewards && <span className="text-green-600 text-xs"> + {record.rewards.toFixed(4)} rewards</span>}
                 </div>
@@ -492,15 +504,15 @@ const CompletelyLiveStaking = ({ walletAddress }) => {
         </div>
       )}
 
-      {/* LIVE PROGRAM INFO */}
-      <div className="p-4 bg-gray-100 border-2 border-gray-400 rounded-lg">
-        <h4 className="font-bold mb-2 text-gray-800">🔴 COMPLETELY LIVE PROGRAM CONFIGURATION</h4>
-        <div className="text-xs space-y-1 text-gray-700 font-mono">
-          <div>🔴 Program ID: {LIVE_CONFIG.PROGRAM_ID.toString()}</div>
-          <div>🔴 SDAO Mint: {LIVE_CONFIG.SDAO_MINT.toString()}</div>
-          <div>🔴 Staking Vault: {LIVE_CONFIG.STAKING_VAULT.toString()}</div>
-          <div>🔴 Network: Solana Devnet</div>
-          <div>🔴 Status: COMPLETELY LIVE - ZERO DEMO CODE</div>
+      {/* PROGRAM INFO */}
+      <div className="p-4 bg-gray-100 border rounded-lg">
+        <h4 className="font-semibold mb-2 text-gray-800">Program Information</h4>
+        <div className="text-xs space-y-1 text-gray-700">
+          <div>Program ID: {LIVE_CONFIG.PROGRAM_ID.toString()}</div>
+          <div>SDAO Mint: {LIVE_CONFIG.SDAO_MINT.toString()}</div>
+          <div>Staking Vault: {LIVE_CONFIG.STAKING_VAULT.toString()}</div>
+          <div>Network: Solana Devnet</div>
+          <div>Status: Live Staking Active</div>
         </div>
       </div>
     </div>
