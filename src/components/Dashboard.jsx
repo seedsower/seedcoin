@@ -91,12 +91,6 @@ const Dashboard = () => {
     }
   ]
 
-  // Staking configuration
-  const stakingConfig = {
-    sdaoMint: '9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt',
-    programId: 'imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR',
-    apy: 18.5
-  }
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
