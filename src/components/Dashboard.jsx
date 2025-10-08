@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Connection } from '@solana/web3.js'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
 import { Button } from '@/components/ui/button.jsx'
 import { Badge } from '@/components/ui/badge.jsx'
@@ -19,7 +20,7 @@ import {
   BarChart3,
   Vote
 } from 'lucide-react'
-import RealLiveStaking from './RealLiveStaking.jsx'
+import SimpleStaking from './SimpleStaking.jsx'
 import Analytics from './Analytics.jsx'
 import SeedStableProtocol from './SeedStableProtocol.jsx'
 import TokenPurchase from './TokenPurchase.jsx'
@@ -90,26 +91,12 @@ const Dashboard = () => {
     }
   ]
 
-  const stakingPools = [
-    {
-      token: 'SDAO',
-      apy: 18.5,
-      staked: 250.00,
-      rewards: 12.34,
-      lockPeriod: '90 days',
-      status: 'active',
-      mint: '9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt', // Real SDAO mint
-      programId: 'imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR'
-    },
-    {
-      token: 'SEEDS',
-      apy: 8.2,
-      staked: 500.00,
-      rewards: 5.67,
-      lockPeriod: '30 days',
-      status: 'active'
-    }
-  ]
+  // Staking configuration
+  const stakingConfig = {
+    sdaoMint: '9N1zAerRJnQEqoCvabYmPzbokai2TMK5F8Jb8cEBZSvt',
+    programId: 'imhPqBdTKnajpiWiKY88kssdWC4eiwHvaLfQNu5vEvR',
+    apy: 18.5
+  }
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
@@ -278,11 +265,10 @@ const Dashboard = () => {
                 <TokenPurchase />
               </TabsContent>
 
-              {/* Stake Tab - Real Live SDAO Staking */}
+              {/* Stake Tab - Live SDAO Staking */}
               <TabsContent value="stake" className="space-y-6">
-                <RealLiveStaking 
-                  walletAddress="Dm1PKxJGqFQdwbqQUABs3tBedYKnEcMJ2ubTRD1hcwNQ" 
-                  connection={null}
+                <SimpleStaking 
+                  walletAddress="Dm1PKxJGqFQdwbqQUABs3tBedYKnEcMJ2ubTRD1hcwNQ"
                 />
               </TabsContent>
 
